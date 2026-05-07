@@ -1,6 +1,6 @@
 # aioneverdark
 
-Async Python library for controlling [Neverdark](https://neverdark.one) smart fireplaces via their REST API.
+Asynchronous Python client for controlling [Neverdark](https://neverdark.one) smart fireplaces via their REST API.
 
 ## Installation
 
@@ -16,8 +16,8 @@ from aioneverdark import NeverdarkClient
 
 async def main() -> None:
     async with NeverdarkClient(host="192.168.1.x") as client:
-        status = await client.get_status()
-        print(f"Fireplace is {'on' if status.is_on else 'off'}, flame level: {status.flame_level}")
+        info = await client.get_info()
+        print(f"Model: {info.model}, firmware: {info.fw_ver}, MAC: {info.dev_mac}")
 
 asyncio.run(main())
 ```

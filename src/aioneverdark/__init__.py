@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from .client import NeverdarkClient
-from .exceptions import NeverdarkApiError, NeverdarkAuthError, NeverdarkError
-from .models import FireplaceInfo
+from .exceptions import NeverdarkApiError, NeverdarkCommandError, NeverdarkError
+from .models import FireplaceInfo, FireplaceMode, FireplaceStats
 
 __all__ = [
     "NeverdarkClient",
     "FireplaceInfo",
+    "FireplaceMode",
+    "FireplaceStats",
     "NeverdarkApiError",
-    "NeverdarkAuthError",
+    "NeverdarkCommandError",
     "NeverdarkError",
 ]

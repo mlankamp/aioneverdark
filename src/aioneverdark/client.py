@@ -5,9 +5,15 @@ from typing import Any
 
 import aiohttp
 
-from .const import ENDPOINT_INFO
-from .exceptions import NeverdarkApiError
-from .models import FireplaceInfo
+from .const import (
+    ENDPOINT_INFO,
+    ENDPOINT_SET_LEVEL,
+    ENDPOINT_STATS,
+    ENDPOINT_TURN_OFF,
+    ENDPOINT_TURN_ON,
+)
+from .exceptions import NeverdarkApiError, NeverdarkCommandError
+from .models import FireplaceInfo, FireplaceStats
 
 
 class NeverdarkClient:
@@ -44,7 +50,33 @@ class NeverdarkClient:
     async def get_info(self) -> FireplaceInfo:
         """Return device information (firmware version, model, MAC address, etc.)."""
         data = await self._request("GET", ENDPOINT_INFO)
-        return FireplaceInfo.from_dict(data)
+        return FireplaceInfo.model_validate(data)
+
+    async def get_stats(self) -> FireplaceStats:
+        """Return current fireplace stats (temperature, fuel, mode, etc.)."""
+        data = await self._request("GET", ENDPOINT_STATS)
+        return FireplaceStats.model_validate(data)
+
+    async def turn_on(self) -> None:
+        """Turn the fireplace on."""
+        data = await self._request("POST", ENDPOINT_TURN_ON)
+        if not data.get("success"):
+            raise NeverdarkCommandError("turn_on command failed: device returned success=false")
+
+    async def turn_off(self) -> None:
+        """Turn the fireplace off."""
+        data = await self._request("POST", ENDPOINT_TURN_OFF)
+        if not data.get("success"):
+            raise NeverdarkCommandError("turn_off command failed: device returned success=false")
+
+    async def set_level(self, flame_level: int) -> int:
+        """Set the flame level (0-100). Returns the confirmed level from the device."""
+        if not 0 <= flame_level <= 100:
+            raise ValueError(f"flame_level must be between 0 and 100, got {flame_level}")
+        data = await self._request("POST", ENDPOINT_SET_LEVEL, json={"flameLevel": flame_level})
+        if not data.get("success"):
+            raise NeverdarkCommandError("set_level command failed: device returned success=false")
+        return int(data["newLevel"])
 
     # ------------------------------------------------------------------
     # Internal helpers

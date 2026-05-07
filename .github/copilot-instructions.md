@@ -23,6 +23,9 @@ pytest tests/test_client.py::TestFireplaceClient::test_get_status
 ruff check .
 ruff format .
 
+# Pylint
+pylint src/aioneverdark
+
 # Type checking
 mypy src/aioneverdark
 ```
@@ -47,7 +50,7 @@ pyproject.toml
 
 - **`NeverdarkClient`** is the single public class consumers instantiate. It owns the `aiohttp.ClientSession` lifecycle (created on `__aenter__`, closed on `__aexit__`). Use it as an async context manager.
 - **No authentication** — the device is accessed directly by host IP on the local network; no tokens or credentials are required.
-- **Models** are plain `@dataclass` classes in `models.py`. JSON responses are parsed via a `from_dict(data)` classmethod on each model.
+- **Models** use `pydantic` `BaseModel` for all API payloads. `FireplaceStats` uses `alias_generator=to_camel` to map camelCase JSON keys to snake_case Python fields. Parse responses with `Model.model_validate(data)`.
 - **Exceptions** derive from `NeverdarkError` (base). HTTP errors are wrapped into `NeverdarkApiError` with `status_code` and `message` fields.
 
 ## Key conventions

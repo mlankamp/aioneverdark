@@ -1,11 +1,38 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any
+from enum import IntEnum
+
+from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 
 
-@dataclass
-class FireplaceInfo:
+class FireplaceMode(IntEnum):
+    Off = 1
+    WarmingUp = 2
+    Running = 3
+    CoolingDown = 4
+
+
+class FireplaceStats(BaseModel):
+    """Response model for /stats."""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    room_name: str
+    protected: bool
+    id: str
+    name: str
+    temp_progress: int
+    current_temperature: int
+    target_temperature: int
+    fuel: int
+    timer: int
+    expected_time: int
+    error_code: int
+    mode: FireplaceMode
+
+
+class FireplaceInfo(BaseModel):
     """Response model for /getinfo."""
 
     fw_ver: str
@@ -15,15 +42,3 @@ class FireplaceInfo:
     home_wifi: str
     loc_ip: str
     dev_mac: str
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> FireplaceInfo:
-        return cls(
-            fw_ver=data["fw_ver"],
-            hw_ver=data["hw_ver"],
-            model=data["model"],
-            dev_id=data["dev_id"],
-            home_wifi=data["home_wifi"],
-            loc_ip=data["loc_ip"],
-            dev_mac=data["dev_mac"],
-        )

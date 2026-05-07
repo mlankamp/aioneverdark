@@ -12,3 +12,7 @@ class NeverdarkApiError(NeverdarkError):
         self.status_code = status_code
         self.message = message
         super().__init__(f"API error {status_code}: {message}")
+
+
+class NeverdarkCommandError(NeverdarkError):
+    """Raised when the device returns {\"success\": false} for a command."""

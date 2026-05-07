@@ -6,8 +6,8 @@ build-backend = "hatchling.build"
 name = "aioneverdark"
 version = "0.1.0"
 description = "Asynchronous Python client for the Neverdark Fireplace"
-authors = [{ name="Michiel Lankamp", email="<hello@c-hekje.nl>"}]
-maintainers = [{name="Michiel Lankamp", email="<hello@c-hekje.nl>"}]
+authors = [{ name="Michiel Lankamp", email="hello@c-hekje.nl"}]
+maintainers = [{name="Michiel Lankamp", email="hello@c-hekje.nl"}]
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }

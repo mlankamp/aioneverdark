@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 from types import TracebackType
 from typing import Any
 
-import aiohttp
+from aiohttp.client import ClientError, ClientSession
+from yarl import URL
 
 from .const import (
     ENDPOINT_INFO,
@@ -11,6 +13,8 @@ from .const import (
     ENDPOINT_STATS,
     ENDPOINT_TURN_OFF,
     ENDPOINT_TURN_ON,
+    PORT,
+    SCHEME,
 )
 from .exceptions import NeverdarkApiError, NeverdarkCommandError
 from .models import FireplaceInfo, FireplaceStats
@@ -23,14 +27,22 @@ class NeverdarkClient:
 
         async with NeverdarkClient(host="192.168.1.x") as client:
             info = await client.get_info()
+
+    An existing ``aiohttp.ClientSession`` can be supplied; in that case the
+    caller is responsible for closing it::
+
+        async with aiohttp.ClientSession() as session:
+            async with NeverdarkClient(host="192.168.1.x", session=session) as client:
+                info = await client.get_info()
     """
 
-    def __init__(self, host: str) -> None:
-        self._base_url = f"http://{host}"
-        self._session: aiohttp.ClientSession | None = None
+    def __init__(self, host: str, session: ClientSession | None = None) -> None:
+        self.request_timeout: int = 10
+        self.host = host
+        self.session: ClientSession | None = session
+        self._close_session: bool = False
 
-    async def __aenter__(self) -> NeverdarkClient:
-        self._session = aiohttp.ClientSession()
+    async def __aenter__(self)-> NeverdarkClient:
         return self
 
     async def __aexit__(
@@ -39,9 +51,7 @@ class NeverdarkClient:
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        if self._session:
-            await self._session.close()
-            self._session = None
+        await self.close()
 
     # ------------------------------------------------------------------
     # Public API
@@ -78,23 +88,44 @@ class NeverdarkClient:
             raise NeverdarkCommandError("set_level command failed: device returned success=false")
         return int(data["newLevel"])
 
+    async def close(self) -> None:
+        """Close open client session."""
+        if self.session and self._close_session:
+            await self.session.close()
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
 
-    async def _request(self, method: str, path: str, **kwargs: Any) -> Any:
-        """Execute an HTTP request and return the parsed JSON body."""
-        session = self._get_session()
-        url = f"{self._base_url}{path}"
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        **kwargs: Any,  # noqa: ANN401
+    ) -> Any:  # noqa: ANN401
+        url = URL.build(
+            scheme=SCHEME,
+            host=self.host,
+            port=PORT,
+            path=path
+        )
 
-        async with session.request(method, url, **kwargs) as resp:
-            if not resp.ok:
-                raise NeverdarkApiError(resp.status, await resp.text())
-            return await resp.json()
+        if self.session is None:
+            self.session = ClientSession()
+            self._close_session = True
 
-    def _get_session(self) -> aiohttp.ClientSession:
-        if self._session is None:
-            raise RuntimeError(
-                "Client is not open. Use 'async with NeverdarkClient(...) as client'."
-            )
-        return self._session
+        try:
+            async with asyncio.timeout(self.request_timeout):
+                response = await self.session.request(method, url, **kwargs)
+                response.raise_for_status()
+        except TimeoutError as exception:
+            msg = "Timeout occured while connecting to Neverdark device"
+            raise NeverdarkApiError(msg) from exception
+        except (
+            ClientError
+        ) as exception:
+            msg = "Error occured while communicating with Neverdark devices"
+            raise NeverdarkApiError(msg) from exception
+
+        return await response.json()
+

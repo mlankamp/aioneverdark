@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aioneverdark"
-version = "0.1.0"
+version = "0.2.0"
 description = "Asynchronous Python client for the Neverdark Fireplace"
 authors = [{ name="Michiel Lankamp", email="hello@c-hekje.nl"}]
 maintainers = [{name="Michiel Lankamp", email="hello@c-hekje.nl"}]
